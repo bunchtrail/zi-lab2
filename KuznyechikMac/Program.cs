@@ -145,15 +145,8 @@ Console.WriteLine("Имитовставка: " + Convert.ToHexString(mac));
 // Перевод десятичного числа из задания в 256-битный ключ
 byte[] DecimalKeyToBytes(string decimalKey)
 {
-    BigInteger number = BigInteger.Parse(decimalKey);
-    byte[] shortKey = number.ToByteArray(isUnsigned: true, isBigEndian: true);
-
-    if (shortKey.Length > 32)
-        throw new ArgumentException("Ключ больше 256 бит.");
-
-    byte[] key = new byte[32];
-    Array.Copy(shortKey, 0, key, 32 - shortKey.Length, shortKey.Length);
-    return key;
+    string hexKey = BigInteger.Parse(decimalKey).ToString("X").PadLeft(64, '0');
+    return Convert.FromHexString(hexKey);
 }
 
 // Развертка 256-битного ключа в 10 раундовых ключей
