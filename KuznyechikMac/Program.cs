@@ -3,11 +3,11 @@
 //
 // 1. Берет исходные данные:
 //    - текст сообщения;
-//    - ключ в шестнадцатеричном виде.
+//    - ключ как десятичное число из задания.
 //
 // 2. Переводит данные в байты:
 //    - сообщение переводит в байты Windows-1251;
-//    - ключ переводит из hex-строки в байты.
+//    - ключ переводит из десятичной строки в 32 байта.
 //
 // 3. Готовит ключи:
 //    - из основного ключа получает раундовые ключи;
@@ -30,11 +30,12 @@
 //    - выводит имитовставку, то есть код проверки сообщения.
 #endregion
 
+using System.Numerics;
 using System.Text;
 
 // Сообщение и ключ из варианта
 string message = "Я не беру совсем никаких взяток.";
-string keyHex = "00000000001256F08DF046D9FED637D232DA5BEED6CABD428CB27A362B4D8513";
+string keyDecimal = "7544477164492075173268036533303823830950182572930753749094073619";
 
 // Таблица подстановки
 byte[] Pi = {
@@ -63,7 +64,7 @@ Console.OutputEncoding = Encoding.UTF8;
 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
 Console.WriteLine("Сообщение: " + message);
-Console.WriteLine("Ключ (hex): " + keyHex);
+Console.WriteLine("Ключ (10): " + keyDecimal);
 Console.WriteLine();
 
 // Переводим сообщение в байты через Windows-1251
@@ -71,10 +72,8 @@ Encoding win1251 = Encoding.GetEncoding(1251);
 byte[] msgBytes = win1251.GetBytes(message);
 Console.WriteLine("Сообщение в байтах: " + BitConverter.ToString(msgBytes));
 
-// Переводим ключ из hex в массив байтов
-byte[] key = new byte[32];
-for (int i = 0; i < 32; i++)
-    key[i] = Convert.ToByte(keyHex.Substring(i * 2, 2), 16);
+// Переводим десятичный ключ из задания в 32 байта
+byte[] key = DecimalKeyToBytes(keyDecimal);
 Console.WriteLine("Ключ в байтах:      " + BitConverter.ToString(key));
 Console.WriteLine();
 
@@ -142,6 +141,20 @@ Console.WriteLine("Имитовставка: " + Convert.ToHexString(mac));
 
 
 // === Функции алгоритма Кузнечик ===
+
+// Перевод десятичного числа из задания в 256-битный ключ
+byte[] DecimalKeyToBytes(string decimalKey)
+{
+    BigInteger number = BigInteger.Parse(decimalKey);
+    byte[] shortKey = number.ToByteArray(isUnsigned: true, isBigEndian: true);
+
+    if (shortKey.Length > 32)
+        throw new ArgumentException("Ключ больше 256 бит.");
+
+    byte[] key = new byte[32];
+    Array.Copy(shortKey, 0, key, 32 - shortKey.Length, shortKey.Length);
+    return key;
+}
 
 // Развертка 256-битного ключа в 10 раундовых ключей
 byte[][] ExpandKeys(byte[] masterKey)
